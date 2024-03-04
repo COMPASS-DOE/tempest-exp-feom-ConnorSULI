@@ -61,16 +61,16 @@ process_iron = function(ferrozine_map, ferrozine_data){
     # now do the calibrations
     # standards are in mM
     # molecular formula for FAS = (NH₄)₂Fe(SO₄)₂·6H₂O
-    # so 1 M FAS = 2M Fe
-    # 1 mM FAS = 2 * 55.85 mg Fe in 1 L solution = 111.7 mg Fe in 1 L solution
-    # therefore 1 mM = 111.7 mg/L or 111.7 ppm
+    # so 1 M FAS = 1M Fe
+    # 1 mM FAS = 1 * 55.85 mg Fe in 1 L solution = 55.85 mg Fe in 1 L solution
+    # therefore 1 mM = 55.85 mg/L or 55.85 ppm
     
     standards = 
       data_processed %>% 
       filter(sample_type == "standard") %>% 
       mutate(standard_mM = parse_number(sample_label),
              standard_type = str_extract(sample_label, "FAS|FeCl3"),
-             standard_ppm =  case_when(standard_type == "FAS" ~ standard_mM * 111.7)) %>% 
+             standard_ppm =  case_when(standard_type == "FAS" ~ standard_mM * 55.85)) %>% 
       #dplyr::select(date, tray, absorbance_562, standard_ppm) %>% 
       mutate(standard_ppm = as.numeric(standard_ppm))
     
@@ -133,6 +133,7 @@ process_iron = function(ferrozine_map, ferrozine_data){
     rename(Fe2_ppm = Fe2,
            Fe3_ppm = Fe3,
            FeTotal_ppm = Fe_total) %>% 
+    mutate(across(where(is.numeric), round, 2)) %>% 
     ungroup() %>% 
     dplyr::select(-date, -red_eff)
 
