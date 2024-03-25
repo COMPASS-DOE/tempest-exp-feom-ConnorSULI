@@ -10,7 +10,7 @@ options(scipen = 999999)
 ferrozine_map = read.csv("1-data/ferrozine_MAP_2024-03-08.csv", na = "") %>% janitor::clean_names()
 
 # b. sample key
-ferrozine_key = read.csv("1-data/ferrozine-sampleID_kfp.csv") %>% janitor::clean_names()
+ferrozine_key = read.csv("1-data/ferrozine-sampleID_kfp.csv") %>% janitor::clean_names() %>% dplyr::select(id, ferrozine_id)
 
 # c. import data files
 import_iron = function(FILEPATH){
@@ -143,9 +143,11 @@ samples =
   mutate(flag = case_when(ppm_calculated < 5 ~ "below detection"),
          ppm_calculated = round(ppm_calculated, 2)) %>% 
   group_by(date, sample_label, analysis) %>% 
-  dplyr::mutate(sd = sd(ppm_calculated),
-                mean = mean(ppm_calculated),
-                cv = 100 * sd/mean)
+  dplyr::mutate(mean = mean(ppm_calculated),
+                sd = sd(ppm_calculated),
+                cv = 100 * sd/mean) %>% 
+  # filter samples as needed
+  force()
 
 samples_summary = 
   samples %>% 
@@ -153,11 +155,14 @@ samples_summary =
   dplyr::summarize(ppm_calculated = mean(ppm_calculated)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = "analysis", values_from = "ppm_calculated") %>% 
-  mutate(across(where(is.numeric), round, 2)) %>% 
+ # mutate(across(where(is.numeric), round, 2)) %>% 
   mutate(Fe_total = Fe_total * 100/reduction,  # correct for 99.6% reduction efficiency of ascorbic acid
          Fe3 = Fe_total - Fe2) %>% 
   rename(Fe2_ppm = Fe2,
          Fe3_ppm = Fe3,
-         FeTotal_ppm = Fe_total) %>% 
+         FeTotal_ppm = Fe_total,
+         ferrozine_id = sample_label) %>% 
   mutate(across(where(is.numeric), round, 2)) %>% 
-  ungroup() 
+  ungroup() %>% 
+  right_join(ferrozine_key) %>% 
+  dplyr::select(id, ferrozine_id, everything())
