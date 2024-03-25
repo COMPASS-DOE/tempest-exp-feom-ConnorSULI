@@ -1,0 +1,24 @@
+[Header]	
+System	TOC-L with TNM	
+S/W Version	1.00	
+User		
+Date/Time	3/21/2024 12:08:29 PM	
+
+[System]	
+Instrument Options	TOC/ASI/IC Unit/TN/Sparge Kit/High Suspension Kit (High Conc.)	
+
+[Data]	
+Type	Anal.	Sample Name	Sample ID	Result(TOC)	Result(TC)	Result(IC)	Result(POC)	Result(NPOC)	Result(TN)	Unit	Vial	Date / Time	
+Unknown	NPOC/TN	CondBlank1	Untitled					0.000	0.000	mg/L	1	3/11/2024 12:20:49 PM	
+Unknown	NPOC/TN	CondBlank2	Untitled					0.000	0.000	mg/L	2	3/11/2024 12:40:10 PM	
+Unknown	NPOC/TN	CondBlank3	Untitled					0.000	0.000	mg/L	3	3/11/2024 12:54:17 PM	
+Standard	NPOC	CalCurve_0-100ppmC	Untitled					100.0		mg/L	4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14	3/11/2024 5:42:03 PM	
+Unknown	NPOC/TN	Blank1	Untitled					0.7600	0.000	mg/L	15	3/11/2024 6:03:12 PM	
+Unknown	NPOC/TN	CKSTD1-1ppmC	Untitled					7.417	0.000	mg/L	16	3/11/2024 6:25:56 PM	
+Unknown	NPOC/TN	Blank2	Untitled					0.6118	0.000	mg/L	17	3/11/2024 6:40:01 PM	
+Unknown	NPOC/TN	OW1.1.A	Untitled					16.60	0.000	mg/L	18	3/11/2024 7:05:17 PM	
+Unknown	NPOC/TN	AW1.1.A	Untitled					15.04	0.000	mg/L	19	3/11/2024 7:21:16 PM	
+Unknown	NPOC/TN	OW1.1.B	Untitled					12.98	0.000	mg/L	20	3/11/2024 7:44:50 PM	
+Unknown	NPOC/TN	AW1.1.B	Untitled					15.78	0.000	mg/L	21	3/11/2024 8:00:56 PM	
+Unknown	NPOC/TN	OW1.1.C	Untitled					12.38	0.000	mg/L	22	3/11/2024 8:25:39 PM	
+Unknown	NPOC/TN	AW1.1.C	Untitled					13.17	0.000	mg/L	23	3/11/2024 8:50:10 PM	
