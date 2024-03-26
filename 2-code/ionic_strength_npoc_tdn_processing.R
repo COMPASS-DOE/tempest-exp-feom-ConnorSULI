@@ -5,6 +5,7 @@
 ## Created: 2022-01-15 by Peter Regier for EXCHANGE
 ## Updated: 2022-06-26 by Allison Myers-Pigg for TEMPEST
 ## Updated: 2023-12-19 by AMP for ionic strength experiment
+## Updated: 2024-03-26 by CO and AMP for SULI experiment
 ## 
 # 1. Setup ---------------------------------------------------------------------
 
@@ -22,7 +23,7 @@ getwd()
 
 ## Set Github filepath for NPOC raw data files:
 
-directory = "../tempest_ionic_strength/Data/DOC"
+directory = "../tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/OneDrive_1_3-21-2024"
 
 # 2. Functions -----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ ReadMes <- list.files(path = directory, pattern = "Readme", full.names = TRUE)
 
 npoc_raw <- files %>% 
   map_df(read_data) %>% 
-  filter(grepl("\\.[a-zA-Z]\\.", sample_name)) %>% # filter to samples only
+  filter(grepl("W", sample_name)) %>% # filter to samples only
   bind_rows() 
 
 blanks_raw <- files %>% 
