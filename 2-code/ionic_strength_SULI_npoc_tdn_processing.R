@@ -196,16 +196,20 @@ npoc_flags <- all_samples_dilution_corrected%>%
          )
 
 npoc_wmeta <- npoc_flags %>%
-  mutate(Wash = stringr::str_extract(sample_name, "\\d+(?=\\.)"),
+  mutate(Treatment = stringr::str_extract(sample_name, "[a-zA-Z]+(?=\\d)"),
+         Wash = stringr::str_extract(sample_name, "\\d+(?=\\.)"),
          Fraction = stringr::str_extract(sample_name, "(?<=\\.)\\d+(?=\\.)")
            #stringr::str_extract(sample_name, "(?<=\\.[a-zA-Z].)\\d+")
          ) %>%
-  mutate(Wash = case_when(is.na(Wash) ~ "1",
+  mutate(Treatment = case_when(is.na(Treatment) ~ "AW",
+                                TRUE ~ Treatment),
+    Wash = case_when(is.na(Wash) ~ "1",
                           TRUE ~ Wash),
     Fraction = case_when(Fraction == "01" ~ "0.1",
                               Fraction == "45" ~ "0.45",
                               is.na(Fraction) ~ "Blank",
-                               TRUE ~ Fraction))
+                               TRUE ~ Fraction),
+    Group = paste(Treatment, Fraction, sep= " ") )
 
 # 8. Write data ----------------------------------------------------------------
 #look at all your data before saving:
@@ -222,14 +226,15 @@ write_csv(npoc_wmeta, "../tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/TMP_Fe
 ## Look at it all together! 
 
 treatment_order <- c('0.1','0.45','1', "Blank")
+line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank")
 
 
 npoc_wmeta %>%
-  group_by(Fraction, Wash) %>%
+  group_by(Fraction, Treatment, Wash, Group) %>%
   dplyr::summarise(mean_doc_mg_l = mean(doc_mg_l, na.rm=TRUE), sd_doc_mg_l = sd(doc_mg_l, na.rm=TRUE)) %>%
 ggplot()+
-  geom_pointrange(aes(x=Wash, y=mean_doc_mg_l, ymin = mean_doc_mg_l- sd_doc_mg_l, ymax = mean_doc_mg_l + sd_doc_mg_l, color= factor(Fraction, levels= treatment_order))) +
-  geom_path(aes(x=Wash, y=mean_doc_mg_l, color= factor(Fraction, levels= treatment_order), group=factor(Fraction, levels= treatment_order) )) +
+  geom_pointrange(aes(x=Wash, y=mean_doc_mg_l, ymin = mean_doc_mg_l- sd_doc_mg_l, ymax = mean_doc_mg_l + sd_doc_mg_l, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
+  geom_path(aes(x=Wash, y=mean_doc_mg_l, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
   labs(x = "Wash", y = "DOC mgC/L", color = "Size Fraction (um)")
 
