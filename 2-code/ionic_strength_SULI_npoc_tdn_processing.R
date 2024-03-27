@@ -83,18 +83,18 @@ readmes_all <- ReadMes %>%
 
 curvepts <-files %>% 
   map_df(read_data) %>% #some curves were omitted according to the read mes, but this doesn't matter rn because all the same range. 
-  filter(grepl("CalCurve_", sample_name)) %>% # filter to curves only
-  rename(standard_high_C = npoc_raw,
-         standard_high_N = tdn_raw) %>%
-  select(rundate,standard_high_C,standard_high_N) %>%
+  filter(grepl("^CalCurve_", sample_name)) %>% # filter to curves only
+  rename(standard_high_C = npoc_raw) %>%
+  select(rundate,standard_high_C) %>%
   #this part of the code would matter if we actually ran different curve ranges between the two runs then applied the other curve to the other dataset (which is what was done). 
   #It doesn't matter now since functionally the same for the same concentration ranges. 
-  pivot_longer(cols = c(standard_high_C,standard_high_N)) %>%
+  pivot_longer(cols = c(standard_high_C)) %>%
   na.omit() %>%
   group_by(rundate) %>%
   distinct()%>%
   pivot_wider(names_from= name, values_from = value)%>%
-  bind_rows() 
+  bind_rows() %>%
+  problems()
 
 
 # 4. Calculate blanks and add to data ------------------------------------------
@@ -102,13 +102,10 @@ curvepts <-files %>%
 blanks <- blanks_raw %>% 
   filter(!run_datetime %in% NA) %>% 
   mutate(npoc_raw = ifelse(npoc_raw > 0, npoc_raw, NA)) %>%
-  mutate(tdn_raw = ifelse(tdn_raw > 0, tdn_raw, NA)) %>%
   group_by(rundate) %>% 
   summarize(npoc_blank= round(mean(npoc_raw[!is.na(npoc_raw)]), 2),
-            npoc_blank_SD= round(sd(npoc_raw[!is.na(npoc_raw)]), 2), #add SD columns
-            tdn_blank= round(mean(tdn_raw[!is.na(tdn_raw)]), 2),
-            tdn_blank_SD= round(sd(tdn_raw[!is.na(tdn_raw)]), 2)) %>% #add SD columns
-  select(rundate, npoc_blank, npoc_blank_SD, tdn_blank, tdn_blank_SD)
+            npoc_blank_SD= round(sd(npoc_raw[!is.na(npoc_raw)]), 2)) %>% #add SD columns 
+  select(rundate, npoc_blank, npoc_blank_SD)
 
 View(blanks) # Check out the blank data 
 
@@ -141,7 +138,7 @@ samples_to_dilution_corrected =
   left_join(dilutions, by = c("sample_name", "rundate")) %>% 
   filter(grepl("Dilution correction", Action)) %>%
   filter(!Action %in% "Omit") %>% 
-  mutate(doc_mg_l= npoc_raw * Dilution, tdn_mg_l = tdn_raw * Dilution, # True concentration = diluted concentration * total vol / sample vol
+  mutate(doc_mg_l= npoc_raw * Dilution, # True concentration = diluted concentration * total vol / sample vol
          doc_mg_l = as.numeric(doc_mg_l), doc_mg_l = round(doc_mg_l, 2),
          ) %>%
   mutate(doc_mg_l = case_when(Dilution > 30 & npoc_flag == "blank is ≥ 15% of sample value" ~ NA,
@@ -159,9 +156,7 @@ all_samples_dilution_corrected =
   bind_rows(samples_to_dilution_corrected) %>%
   dplyr::select(sample_name, rundate, doc_mg_l, tdn_mg_l, npoc_flag, tdn_flag)%>%
   mutate(doc_mg_l = if_else(doc_mg_l < 0, "NA", as.character(doc_mg_l)),
-         tdn_mg_l = if_else(tdn_mg_l < 0, "NA", as.character(tdn_mg_l)),
-         doc_mg_l = as.numeric(doc_mg_l), doc_mg_l = round(doc_mg_l, 2),
-         tdn_mg_l= as.numeric(tdn_mg_l), tdn_mg_l= round(tdn_mg_l, 2))
+         doc_mg_l = as.numeric(doc_mg_l), doc_mg_l = round(doc_mg_l, 2))
 
 #Identify if any duplicates were run, this should return an empty data frame if not:#
 
