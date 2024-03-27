@@ -1,0 +1,93 @@
+CDOM data for Connor's SULI Project (Spring 2024)
+Advisor: Allison Myers-Pigg
+COMPASS-TEMPEST
+PNNL MSL 5
+3/19/24
+
+
+
+Dilution data:
+Due to the high salt content and high [Colloids], it was nessecary to dilute samples in order to get within range.
+Original Dilution was 120 uL of sample diluted to 3 mL, however I diluted some even further to get the abs down.
+It did not occur to me that the high abs may be from all the suspended material until the last day of measurement
+so that is why I decided to just do the 120 uL at the end, regardless of abs.
+
+AW3.01.2s
+120 uL of sample
+2.88 mL of Milli Q
+
+AW3.45.2s
+120 uL of sample
+2.88 mL of Milli Q
+
+AW3.45.3.2s
+60 uL of sample
+2.94 mL Milli Q
+
+AW3.45.4.2s
+30 uL of sample
+2.97 mL Milli Q
+
+AW3.1.2s
+30 uL sample
+2.97 mL Milli Q
+
+OW3.01.2.2s
+60 uL Sample
+2.94 mL Milli Q
+
+OW3.45.2.2s
+30 uL Sample
+2.97 mL Milli Q
+
+OW3.1.2.2s
+30 uL Sample
+2.97 mL Milli Q
+
+AW4.01.2.2s
+60 uL Sample
+2.94 mL sample
+
+AW4.45.2.2s
+60 uL Sample
+2.94 mL Milli Q
+
+AW4.1.2.2s
+60 uL Sample
+2.94 mL Milli Q
+
+OW4.01.2.2s
+120 uL sample
+2.88 mL Milli Q
+
+OW4.45.2.2s
+120 uL sample
+2.88 mL Milli Q
+
+OW4.1.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+AW5.01.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+AW5.45.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+AW5.1.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+OW5.01.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+OW5.45.2.2s
+120 uL Sample
+2.88 mL Milli Q
+
+OW5.1.2.2s
+120 uL Sample
+2.88 mL Milli Q
