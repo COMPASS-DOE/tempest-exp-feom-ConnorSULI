@@ -23,14 +23,14 @@ getwd()
 
 ## Set Github filepath for NPOC raw data files:
 
-directory = "../tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/OneDrive_1_3-21-2024"
+directory = "C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/OneDrive_1_3-21-2024"
 
 # 2. Functions -----------------------------------------------------------------
 
 ## Create a function to read in data
 read_data <- function(data){
   # First, scrape date from filename
-  rundate <- str_extract(data, "[0-9]{8}")
+ rundate <- str_extract(data, "[0-9]{8}")
   # Second, read in data
   read_delim(file = data, skip = 10, delim = "\t") %>% 
     rename(sample_name = `Sample Name`, 
@@ -58,6 +58,7 @@ read_mes <- function(readme){
 ## Create a list of files to download
 files <- list.files(path = directory, pattern = "Summary", full.names = TRUE) 
 ReadMes <- list.files(path = directory, pattern = "Readme", full.names = TRUE) 
+print(ReadMes)
 
 npoc_raw <- files %>% 
   map_df(read_data) %>% 
@@ -71,18 +72,18 @@ blanks_raw <- files %>%
 
 readmes_dilution_action <- ReadMes %>% 
   map_df(read_mes) %>% 
-  filter(grepl("\\.[a-zA-Z]\\.", sample_name)) %>% # filter to samples only
-  filter(grepl("ilution correction", Action)) %>%
+  filter(grepl("W", sample_name)) %>% # filter to samples only
+  filter(grepl("Dilution correction", Action)) %>%
   bind_rows() 
 
 readmes_all <- ReadMes %>% 
   map_df(read_mes) %>% 
-  filter(grepl("\\.[a-zA-Z]\\.", sample_name)) %>% # filter to samples only
+  filter(grepl("W", sample_name)) %>% # filter to samples only
   bind_rows() 
 
 curvepts <-files %>% 
   map_df(read_data) %>% #some curves were omitted according to the read mes, but this doesn't matter rn because all the same range. 
-  filter(grepl("STD_", sample_name)) %>% # filter to curves only
+  filter(grepl("CalCurve_", sample_name)) %>% # filter to curves only
   rename(standard_high_C = npoc_raw,
          standard_high_N = tdn_raw) %>%
   select(rundate,standard_high_C,standard_high_N) %>%
@@ -114,16 +115,13 @@ View(blanks) # Check out the blank data
 # 5. Flag sketch data -----------------------------------------------------------
 
 npoc_flagged <- npoc_raw %>% 
-  filter(grepl("\\.[a-zA-Z]\\.", sample_name)) %>% # filter to samples only
+  filter(grepl("W", sample_name)) %>% # filter to samples only
   inner_join(blanks, by = "rundate") %>% 
   inner_join(curvepts, by= "rundate") %>%
-  mutate(tdn_flag = case_when(tdn_raw > standard_high_N ~ "value above cal curve",
-                              tdn_blank > 0.15*tdn_raw ~ "blank is ≥ 15% of sample value" # flagging if blank concentration is > 20% of the sample concentration 
-                               ), 
-         #most curves only to 50, those samples were not above it. making 100 for the August and September, which used 0-100
-         npoc_flag = case_when(npoc_raw > standard_high_C ~ "value above cal curve",
+  mutate(npoc_flag = case_when(npoc_raw > standard_high_C ~ "value above cal curve",
                                npoc_blank > 0.15*npoc_raw ~ "blank is ≥ 15% of sample value" # flagging if blank concentration is > 20% of the sample concentration
-                               )
+  )
+         #most curves only to 50, those samples were not above it. making 100 for the August and September, which used 0-100
          # npoc_raw = case_when(npoc_flag == "incorrect sample naming, cannot resolve" ~ NA,
          #                      TRUE ~ npoc_raw),
          # tdn_raw = case_when(tdn_flag == "incorrect sample naming, cannot resolve" ~ NA,
@@ -141,25 +139,22 @@ dilutions =
 samples_to_dilution_corrected = 
   npoc_flagged %>%
   left_join(dilutions, by = c("sample_name", "rundate")) %>% 
-  filter(grepl("ilution correction", Action)) %>%
+  filter(grepl("Dilution correction", Action)) %>%
   filter(!Action %in% "Omit") %>% 
   mutate(doc_mg_l= npoc_raw * Dilution, tdn_mg_l = tdn_raw * Dilution, # True concentration = diluted concentration * total vol / sample vol
          doc_mg_l = as.numeric(doc_mg_l), doc_mg_l = round(doc_mg_l, 2),
-         tdn_mg_l= as.numeric(tdn_mg_l), tdn_mg_l= round(tdn_mg_l, 2)) %>%
+         ) %>%
   mutate(doc_mg_l = case_when(Dilution > 30 & npoc_flag == "blank is ≥ 15% of sample value" ~ NA,
                               TRUE ~ doc_mg_l), # removing values if high blanks and high dilution ratios, potentially large source of error. 
          npoc_flag = case_when(is.na(doc_mg_l) ~ "omitted for high dilution and blank values",
                                TRUE ~ npoc_flag),
-         tdn_mg_l = case_when(Dilution > 30 & tdn_flag == "blank is ≥ 15% of sample value" ~ NA,
-                              TRUE ~ tdn_mg_l),
-         tdn_flag = case_when(is.na(tdn_mg_l) ~ "omitted for high dilution and blank values",
-                              TRUE ~ tdn_flag)) # removing values if high blanks and high dilution ratios, potentially large source of error. 
+         ) # removing values if high blanks and high dilution ratios, potentially large source of error. 
 
 all_samples_dilution_corrected =
   npoc_flagged %>%
   left_join(readmes_all, by = c("sample_name", "rundate")) %>% 
   mutate(doc_mg_l = npoc_raw, tdn_mg_l = tdn_raw) %>%
-  filter(!grepl("ilution correction", Action)) %>% 
+  filter(!grepl("Dilution correction", Action)) %>% 
   filter(!Action %in% "Omit") %>%
   bind_rows(samples_to_dilution_corrected) %>%
   dplyr::select(sample_name, rundate, doc_mg_l, tdn_mg_l, npoc_flag, tdn_flag)%>%
@@ -210,7 +205,7 @@ npoc_wmeta <- npoc_flags %>%
 View(npoc_wmeta)
 
 #not sure the blank is >25% is staying to the end of this data frame 
-write_csv(npoc_wmeta, "../tempest_ionic_strength/Data/Processed Data/ISTMP_NPOC_TDN_L1.csv")
+write_csv(npoc_wmeta, "C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/TMP_FeOM-TOC_Summary.csv")
 
 treatment_order <- c('0','0.1','1','5', '25', '100')
 
