@@ -231,5 +231,5 @@ ggplot()+
   geom_pointrange(aes(x=Wash, y=mean_doc_mg_l, ymin = mean_doc_mg_l- sd_doc_mg_l, ymax = mean_doc_mg_l + sd_doc_mg_l, color= factor(Fraction, levels= treatment_order))) +
   geom_path(aes(x=Wash, y=mean_doc_mg_l, color= factor(Fraction, levels= treatment_order), group=factor(Fraction, levels= treatment_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "DOC mgC/L", color = "% ASW")
+  labs(x = "Wash", y = "DOC mgC/L", color = "Size Fraction (um)")
 
