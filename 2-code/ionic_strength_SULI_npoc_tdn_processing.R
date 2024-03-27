@@ -25,6 +25,11 @@ getwd()
 
 directory = "C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/OneDrive_1_3-21-2024"
 
+##FYI this should work if you open your file from the .Rproj in your repo: "tempest-exp-feom-ConnorSULI"
+
+directory = "../tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/OneDrive_1_3-21-2024/"
+
+
 # 2. Functions -----------------------------------------------------------------
 
 ## Create a function to read in data
@@ -57,6 +62,7 @@ read_mes <- function(readme){
 
 ## Create a list of files to download
 files <- list.files(path = directory, pattern = "Summary", full.names = TRUE) 
+print(files)
 ReadMes <- list.files(path = directory, pattern = "Readme", full.names = TRUE) 
 print(ReadMes)
 
@@ -64,6 +70,8 @@ npoc_raw <- files %>%
   map_df(read_data) %>% 
   filter(grepl("W", sample_name)) %>% # filter to samples only
   bind_rows() 
+
+#I'm still getting a weird warning for your data I think it has to do with the different file export type on the 118 TOC than on Oscar.
 
 blanks_raw <- files %>% 
   map_df(read_data) %>% 
@@ -93,8 +101,7 @@ curvepts <-files %>%
   group_by(rundate) %>%
   distinct()%>%
   pivot_wider(names_from= name, values_from = value)%>%
-  bind_rows() %>%
-  problems()
+  bind_rows() 
 
 
 # 4. Calculate blanks and add to data ------------------------------------------
@@ -154,7 +161,7 @@ all_samples_dilution_corrected =
   filter(!grepl("Dilution correction", Action)) %>% 
   filter(!Action %in% "Omit") %>%
   bind_rows(samples_to_dilution_corrected) %>%
-  dplyr::select(sample_name, rundate, doc_mg_l, tdn_mg_l, npoc_flag, tdn_flag)%>%
+  dplyr::select(sample_name, rundate, doc_mg_l, npoc_flag)%>%
   mutate(doc_mg_l = if_else(doc_mg_l < 0, "NA", as.character(doc_mg_l)),
          doc_mg_l = as.numeric(doc_mg_l), doc_mg_l = round(doc_mg_l, 2))
 
@@ -178,39 +185,51 @@ npoc_flags <- all_samples_dilution_corrected%>%
                                doc_mg_l == 'NaN' ~ "value below blank",
                                grepl("value above cal curve",npoc_flag) ~ "value above cal curve",
                                TRUE ~ npoc_flag), 
-         tdn_flag = case_when(
-                              tdn_mg_l == 'NaN' ~ "value below blank",
-                              grepl("value above cal curve",tdn_flag) ~ "value above cal curve",
-                              TRUE ~ tdn_flag),
+         #tdn_flag = case_when(
+              #                tdn_mg_l == 'NaN' ~ "value below blank",
+              #                grepl("value above cal curve",tdn_flag) ~ "value above cal curve",
+              #                TRUE ~ tdn_flag),
          doc_mg_l = case_when(doc_mg_l == "NaN" ~ NA,
                      TRUE ~ doc_mg_l),
-         tdn_mg_l = case_when(tdn_mg_l == "NaN" ~ NA,
-                     TRUE ~ tdn_mg_l))
+        # tdn_mg_l = case_when(tdn_mg_l == "NaN" ~ NA,
+         #            TRUE ~ tdn_mg_l)
+         )
 
 npoc_wmeta <- npoc_flags %>%
-  mutate(Treatment = stringr::str_extract(sample_name, "\\d+(?=\\.)"),
-         Wash = stringr::str_extract(sample_name, "(?<=\\.[a-zA-Z].)\\d+")
+  mutate(Wash = stringr::str_extract(sample_name, "\\d+(?=\\.)"),
+         Fraction = stringr::str_extract(sample_name, "(?<=\\.)\\d+(?=\\.)")
+           #stringr::str_extract(sample_name, "(?<=\\.[a-zA-Z].)\\d+")
          ) %>%
-  mutate(Treatment = case_when(Treatment == "01" ~ "0.1",
-                               TRUE ~ Treatment))
+  mutate(Wash = case_when(is.na(Wash) ~ "1",
+                          TRUE ~ Wash),
+    Fraction = case_when(Fraction == "01" ~ "0.1",
+                              Fraction == "45" ~ "0.45",
+                              is.na(Fraction) ~ "Blank",
+                               TRUE ~ Fraction))
 
 # 8. Write data ----------------------------------------------------------------
 #look at all your data before saving:
 
 View(npoc_wmeta)
 
-#not sure the blank is >25% is staying to the end of this data frame 
-write_csv(npoc_wmeta, "C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/TMP_FeOM-TOC_Summary.csv")
+#write_csv(npoc_wmeta, "C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/TMP_FeOM-TOC_Summary.csv")
 
-treatment_order <- c('0','0.1','1','5', '25', '100')
+#Again this file pathing should work if you opened your file inside your R project 
+write_csv(npoc_wmeta, "../tempest-exp-feom-ConnorSULI/1-data/TMP_FEOM_TOC/TMP_FeOM-TOC_All_data.csv")
+
+
+
+## Look at it all together! 
+
+treatment_order <- c('0.1','0.45','1', "Blank")
 
 
 npoc_wmeta %>%
-  group_by(Treatment, Wash) %>%
+  group_by(Fraction, Wash) %>%
   dplyr::summarise(mean_doc_mg_l = mean(doc_mg_l, na.rm=TRUE), sd_doc_mg_l = sd(doc_mg_l, na.rm=TRUE)) %>%
 ggplot()+
-  geom_pointrange(aes(x=Wash, y=mean_doc_mg_l, ymin = mean_doc_mg_l- sd_doc_mg_l, ymax = mean_doc_mg_l + sd_doc_mg_l, color= factor(Treatment, levels= treatment_order))) +
-  geom_path(aes(x=Wash, y=mean_doc_mg_l, color= factor(Treatment, levels= treatment_order), group=factor(Treatment, levels= treatment_order) )) +
+  geom_pointrange(aes(x=Wash, y=mean_doc_mg_l, ymin = mean_doc_mg_l- sd_doc_mg_l, ymax = mean_doc_mg_l + sd_doc_mg_l, color= factor(Fraction, levels= treatment_order))) +
+  geom_path(aes(x=Wash, y=mean_doc_mg_l, color= factor(Fraction, levels= treatment_order), group=factor(Fraction, levels= treatment_order) )) +
   theme_classic() +
   labs(x = "Wash", y = "DOC mgC/L", color = "% ASW")
 
