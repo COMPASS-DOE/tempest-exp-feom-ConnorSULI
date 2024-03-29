@@ -72,7 +72,7 @@ Unknown	NPOC/TN	AW2.01.C	Untitled					3.042	0.8320	mg/L	69	3/8/2024 2:48:59 PM
 Unknown	NPOC/TN	AW3.01.A	Untitled					17.36	1.487	mg/L	70	3/8/2024 3:11:04 PM	
 Unknown	NPOC/TN	OW3.01.B	Untitled					21.99	1.549	mg/L	71	3/8/2024 3:34:19 PM	
 Unknown	NPOC/TN	OW3.01.C	Untitled					17.10	1.402	mg/L	72	3/8/2024 3:56:39 PM	
-Unknown	NPOC/TN	AW2.01.C	Untitled					13.04	0.9563	mg/L	73	3/8/2024 4:27:50 PM	
+Unknown	NPOC/TN	AW3.01.C	Untitled					13.04	0.9563	mg/L	73	3/8/2024 4:27:50 PM	
 Unknown	NPOC/TN	AW4.01.A	Untitled					17.51	1.049	mg/L	74	3/8/2024 4:52:21 PM	
 Unknown	NPOC/TN	OW4.01.B	Untitled					37.54	2.737	mg/L	75	3/8/2024 5:15:30 PM	
 Unknown	NPOC/TN	OW4.01.C	Untitled					18.21	1.220	mg/L	76	3/8/2024 5:37:55 PM	

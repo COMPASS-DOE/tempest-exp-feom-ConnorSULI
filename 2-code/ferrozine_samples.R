@@ -4,6 +4,8 @@
 library(tidyverse)
 options(scipen = 999999)
 
+setwd("C:/Users/olou646/tempest-exp-feom-ConnorSULI")
+
 # step 1: import data -----------------------------------------------------
 
 # a. plate map/layout
@@ -165,4 +167,39 @@ samples_summary =
   mutate(across(where(is.numeric), round, 2)) %>% 
   ungroup() %>% 
   right_join(ferrozine_key) %>% 
-  dplyr::select(id, ferrozine_id, everything())
+  dplyr::select(id, ferrozine_id, everything()) %>%
+  mutate(Treatment = stringr::str_extract(id, "[a-zA-Z]+(?=\\d)"),
+         Wash = stringr::str_extract(id, "\\d+(?=\\.)"),
+         Fraction = stringr::str_extract(id, "(?<=\\.)\\d+(?=\\.)")
+         #stringr::str_extract(sample_name, "(?<=\\.[a-zA-Z].)\\d+")
+  ) %>%
+  mutate(Treatment = case_when(is.na(Treatment) ~ "AW",
+                               TRUE ~ Treatment),
+         Wash = case_when(is.na(Wash) ~ "1",
+                          TRUE ~ Wash),
+         Fraction = case_when(Fraction == "01" ~ "0.1",
+                              Fraction == "45" ~ "0.45",
+                              is.na(Fraction) ~ "Blank",
+                              TRUE ~ Fraction),
+         Group = paste(Treatment, Fraction, sep= " ") )
+
+
+
+
+#Quick Graph
+treatment_order <- c('0.1','0.45','1', "Blank")
+line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank")
+
+
+samples_summary %>%
+  group_by(Fraction, Treatment, Wash, Group) %>%
+  dplyr::summarise(mean_Fe2_ppm = mean(Fe2_ppm, na.rm=TRUE), sd_Fe2_ppm = sd(Fe2_ppm, na.rm=TRUE)) %>%
+  ggplot()+
+  geom_pointrange(aes(x=Wash, y=mean_Fe2_ppm, ymin = mean_Fe2_ppm- sd_Fe2_ppm, ymax = mean_Fe2_ppm + sd_Fe2_ppm, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
+  geom_path(aes(x=Wash, y=mean_Fe2_ppm, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
+  theme_classic() +
+  labs(x = "Wash", y = "Fe (II) ppm", color = "Size Fraction (um)")
+
+
+write_csv(samples_summary, "1-data/ferrozine_samples/Ferrozine_summary")
+
