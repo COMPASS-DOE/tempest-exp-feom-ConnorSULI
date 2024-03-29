@@ -23,3 +23,9 @@ Measurements were done in triplicate to get an average
 2x, 3x, 4x, 5x, and 7x diluted
 
 The 4x dilution had the smallest % difference from the undiluted sea water
+
+
+
+I used a Firesting GO2 oxygen meter to measure O2%.
+
+Did not use the thermometer attachment but set it for 25 degrees celsius
