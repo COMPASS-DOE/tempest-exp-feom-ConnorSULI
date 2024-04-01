@@ -1,6 +1,6 @@
 # processing data from the ferrozine assay
 # kfp, 2024-03-23
-
+library(readr)
 library(tidyverse)
 options(scipen = 999999)
 
@@ -201,5 +201,5 @@ samples_summary %>%
   labs(x = "Wash", y = "Fe (II) ppm", color = "Size Fraction (um)")
 
 
-write_csv(samples_summary, "1-data/ferrozine_samples/Ferrozine_summary")
-
+write_csv(samples_summary, "C:/Users/olou646/Ferrozine_summary.csv")
+file.exists("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/")

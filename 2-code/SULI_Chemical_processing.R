@@ -1,8 +1,15 @@
-setwd("C:/Users/olou646/")
-file_path<- "C:/Users/olou646"
+# Chemical Processing and summary data
+#Connor O'Loughlin
+#Advisor: Allison Myers-Pigg
+#Created: 3/20/24
+#Updated: 3/29/24
+#TEMPEST: Fe-OM mechanism 
+
+
+
+
 library(tidyverse)
 library(pacman)
-install.packages("openxlsx")
 library(openxlsx)
 
 getwd()
@@ -31,39 +38,56 @@ Cond_dilutions =
 Chemical_dilutions<-merge(Cond_dilutions, Raw_Chemical, by = "ID", all = TRUE) %>%
   subset(select = -c(rundate.x, Action.x, Action.y))%>%
   mutate(rundate = rundate.y) %>%
-  subset(select = -rundate.y)
+  subset(select = -rundate.y)%>%
+  mutate( Cond = ifelse(is.na(Dilution),Cond, Dilution))%>%
+  subset(select = -c(sample,
+                     volume,
+                     Dilution))
+
+
 
 
 #Function for unit conversion and calculating conversion
 #conversion must happen after dilution
  
 
-Cond_conversion_action <- Chemical_dilutions %>% 
+Cond_conversion_action <-Chemical_dilutions %>% 
   filter(grepl("W", ID)) %>% # filter to samples only
   filter(grepl("Conversion", Action_2)) %>%
   bind_rows()
 
-
 Cond_conversion = 
   Cond_conversion_action %>%
-  mutate(Conversion = Dilution *1000) %>%
+  mutate(Conversion = Cond /1000) %>%
   dplyr::select(rundate, ID, Action_2, Conversion)
 
-Cond_conversion2 = 
-  Cond_conversion_action %>%
-  mutate(Conversion = Cond *1000) %>%
-  dplyr::select(rundate, ID, Action_2, Conversion)
+  Cond_estimates<-Cond_conversion%>%
+    mutate(units = "mS")%>%
+    subset(select = -Action_2)
 
-Cond_conversion <- merge(Cond_conversion,Cond_conversion2, by = "ID", all = TRUE)
+  
+#Merging back with O2 data
 
-#df$Age <- ifelse(is.na(df$NewAge), df$Age, df$NewAge)
+Chemical_estimates <-full_join(Cond_estimates, Raw_Chemical, by = "ID")%>%
+  mutate(Cond = ifelse(is.na(Conversion),Cond, Conversion))%>%
+  mutate(rundate = rundate.y)%>%
+  subset(select = -c(Conversion,
+                     units.x,
+                     units.y,
+                     rundate.x,
+                     rundate.y,
+                     Action,
+                     Action_2,
+                     sample,
+                     volume))%>%
+  mutate( units = "mS")
 
-#subset(select = -c(rundate.x, Action.x, Action.y, Cond))%>%
- # mutate(rundate = rundate.y) %>%
-  #subset(select = -rundate.y)
+#TDS
+Chemical_all<- Chemical_estimates%>%
+  mutate("Salinity (g/L)"  = 0.4665*(Cond^1.0878))
 
-
-Chemical_all <-merge(Cond_conversion, Chemical_dilutions, by = "ID", all = TRUE)
+#Exporting data
+write_csv(Chemical_all, "C:/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Salinity_summary.csv")
 
 
 
