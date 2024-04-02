@@ -84,11 +84,24 @@ Chemical_estimates <-full_join(Cond_estimates, Raw_Chemical, by = "ID")%>%
 
 #TDS
 Chemical_all<- Chemical_estimates%>%
-  mutate("Salinity (g/L)"  = 0.4665*(Cond^1.0878))
+  mutate("Salinity (g/L)"  = 0.4665*(Cond^1.0878))%>%
+  mutate(Treatment = stringr::str_extract(ID, "[a-zA-Z]+(?=\\d)"),
+         Wash = stringr::str_extract(ID, "\\d+(?=\\.)"),
+         Fraction = stringr::str_extract(ID, "(?<=\\.)\\d+(?=\\.)")
+         #stringr::str_extract(sample_name, "(?<=\\.[a-zA-Z].)\\d+")
+  ) %>%
+  mutate(Treatment = case_when(is.na(Treatment) ~ "AW",
+                               TRUE ~ Treatment),
+         Wash = case_when(is.na(Wash) ~ "1",
+                          TRUE ~ Wash),
+         Fraction = case_when(Fraction == "01" ~ "0.1",
+                              Fraction == "45" ~ "0.45",
+                              is.na(Fraction) ~ "Blank",
+                              TRUE ~ Fraction),
+         Group = paste(Treatment, Fraction, sep= " ") )
 
 #Exporting data
-write_csv(Chemical_all, "C:/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Salinity_summary.csv")
-
+write_csv(Chemical_all, "../tempest-exp-feom-ConnorSULI/1-data/Summary/Salinity_summary.csv")
 
 
 

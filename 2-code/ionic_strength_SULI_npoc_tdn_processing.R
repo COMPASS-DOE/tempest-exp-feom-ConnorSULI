@@ -210,6 +210,19 @@ npoc_wmeta <- npoc_flags %>%
                               is.na(Fraction) ~ "Blank",
                                TRUE ~ Fraction),
     Group = paste(Treatment, Fraction, sep= " ") )
+  
+
+npoc_wmeta[54,1] = "OW3.45.A"
+npoc_wmeta[55,1] = "AW3.45.A"
+npoc_wmeta[56,1] = "OW3.45.B"
+npoc_wmeta[57,1] = "AW3.45.B"
+npoc_wmeta[58,1] = "OW3.45.C"
+npoc_wmeta[59,1] = "AW3.45.C"
+
+
+
+
+
 
 # 8. Write data ----------------------------------------------------------------
 #look at all your data before saving:
