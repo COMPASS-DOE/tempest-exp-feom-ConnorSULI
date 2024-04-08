@@ -12,7 +12,7 @@ Type	Anal.	Sample Name	Sample ID	Result(TOC)	Result(TC)	Result(IC)	Result(POC)	R
 Unknown	NPOC/TN	CondBlank1	Untitled					0.000	0.000	mg/L	1	3/14/2024 11:35:35 AM	
 Unknown	NPOC/TN	CondBlank2	Untitled					0.000	0.000	mg/L	2	3/14/2024 11:55:55 AM	
 Unknown	NPOC/TN	CondBlank3	Untitled					0.000	0.000	mg/L	3	3/14/2024 12:18:00 PM	
-Standard	TC	CalCurve_0-100ppmC	Untitled		100.0					mg/L	4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14	3/14/2024 4:42:32 PM	
+Standard	TC	CalCurve_0-100ppmC	Untitled					100.0		mg/L	4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14	3/14/2024 4:42:32 PM	
 Unknown	NPOC/TN	Blank1	Untitled					0.1726	0.000	mg/L	15	3/14/2024 5:04:10 PM	
 Unknown	NPOC/TN	CKSTD1-1ppmC	Untitled					0.9470	0.000	mg/L	16	3/14/2024 5:27:36 PM	
 Unknown	NPOC/TN	Blank2	Untitled					0.2519	0.000	mg/L	17	3/14/2024 5:48:56 PM	

@@ -198,7 +198,7 @@ samples_summary %>%
   geom_pointrange(aes(x=Wash, y=mean_Fe2_ppm, ymin = mean_Fe2_ppm- sd_Fe2_ppm, ymax = mean_Fe2_ppm + sd_Fe2_ppm, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
   geom_path(aes(x=Wash, y=mean_Fe2_ppm, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "Fe (II) ppm", color = "Size Fraction (um)")%>%
+  labs(x = "Wash", y = "Fe (II) ppm", color = "Size Fraction (um)")
  
 
 

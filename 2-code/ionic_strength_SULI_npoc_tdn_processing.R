@@ -117,6 +117,13 @@ blanks <- blanks_raw %>%
 View(blanks) # Check out the blank data 
 
 # 5. Flag sketch data -----------------------------------------------------------
+#OW3.1.A<- list( = value1, Column2 = value2, ...)
+#AW3.1.A<- list(Column1 = value1, Column2 = value2, ...)
+#OW3.1.B<- list(Column1 = value1, Column2 = value2, ...)
+#AW3.1.B<- list(Column1 = value1, Column2 = value2, ...)
+#OW3.1.C<- list(Column1 = value1, Column2 = value2, ...)
+#AW3.1.C<- list(Column1 = value1, Column2 = value2, ...)
+
 
 npoc_flagged <- npoc_raw %>% 
   filter(grepl("W", sample_name)) %>% # filter to samples only

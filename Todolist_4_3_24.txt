@@ -1,6 +1,6 @@
-1.Convert to moles (Fe data)
+1.Convert to moles (Fe data)√
 
-2.Calculate molar ratio OC:Fe
+2.Calculate molar ratio OC:Fe√
 
 3.Look at OC:Fe mobilization through time and treatment (use ratio)
 
@@ -16,3 +16,4 @@
 8.Update TOC Readme notes with Rainier's lab notebook
 
 9.Make sure columns are correctly read as numeric, character, etc in Stats code
+	I did this by changing it from an excel document to a csv
