@@ -171,9 +171,9 @@ corrected_all %>%
   theme_classic() +
   labs(x = "Wash", y = "DOC mgC/L", color = "Size Fraction (um)", size = 16)+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
-  theme(axis.text = element_text(size = 16),
+  theme(axis.text = element_text(size = 16), # Increase font size of axis text
         axis.title.x = element_text(size = 16),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 16))
+        axis.title.y = element_text(size = 16)) # Increase font size of y-axis label
 
 
 corrected_all %>%
@@ -216,10 +216,11 @@ corrected_all %>%
 
 
 corrected_all %>%
-  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>%
+  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>% # Making all data below 1 beomce 0.%>%
+  filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= `Fe.OC_mean`)) +
   geom_bar(stat= "identity", color = "Black", fill = "Skyblue", alpha = 0.7) +
-  facet_grid(. ~ Fraction) +
+  facet_grid(. ~ Fraction) + # Making 3 separate graphs based upon Fraction size
   labs(x = "Wash", y = "Fe:OC", 
        title = "Fe:OC Molar Ratio by Wash and Fraction")
 
