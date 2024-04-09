@@ -39,6 +39,7 @@ Salinity_data <- read.csv("./1-data/Summary/Salinity_summary.csv")%>%
   mutate(sample_name = ID)%>%
   subset(select = -ID) %>%
   rename(exp_date = rundate)
+EEMs_Fe_corrected<- read.csv("./1-data/Summary/EEMs_Fe_corrected.csv")
                                                     
 #maybe a simpler way to merge and calculate stuff....
 
@@ -57,7 +58,9 @@ Cor_matrix <-  TOC_data %>%
          Fe.OC = Fe_tot_mmolL/doc_mmolL) %>%
   select(sample_name, Treatment, Wash, Fraction, Group, doc_mg_l, Fe2_ppm:Cond, `Salinity..g.L.`:Fe.OC)%>%
   mutate_if(is.double, as.numeric) %>%
-  summarise_if(is.numeric, list(mean= ~mean(., na.rm=TRUE), sd = ~sd(., na.rm=TRUE)))
+  summarise_if(is.numeric, list(mean= ~mean(., na.rm=TRUE), sd = ~sd(., na.rm=TRUE)))%>%
+  left_join(EEMs_Fe_corrected)%>%
+  mutate(SUVA254 = (a254_corrected/doc_mg_l_mean)*100)
 
 #Finalizing data normalization
 # correlation_matrix1 <- merge(Fe_data, TOC_data, by = "sample_name")%>%
@@ -148,23 +151,30 @@ Cor_matrix <-  TOC_data %>%
 corrected_all <- Cor_matrix %>%
   filter(!Fraction == "Blank") %>%
   arrange(Treatment, Wash, Fraction) %>% # Ensure data is in correct order
-  group_by(Treatment, Wash) %>%# Group by treatment and wash
+  group_by(Treatment, Wash) %>% # Group by treatment and wash
   mutate_all(~replace(., is.nan(.), NA)) %>%
-  mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd), ~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) # Subtract fraction from previous row for the variables it makes sense for only
+  mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd),~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) # Subtract fraction from previous row for the variables it makes sense for only
 
 
 treatment_order <- c('0.1','0.45','1', "Blank")
-line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW") 
+line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank") 
 
 
 #DOC plot
 corrected_all %>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
-  geom_pointrange(aes(x=Wash, y=doc_mg_l_mean, ymin = doc_mg_l_mean- doc_mg_l_sd, ymax = doc_mg_l_mean + doc_mg_l_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
-  geom_path(aes(x=Wash, y=doc_mg_l_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
+  geom_pointrange(aes(x=Wash, y=doc_mg_l_mean, ymin = doc_mg_l_mean- doc_mg_l_sd, ymax = doc_mg_l_mean + doc_mg_l_sd,
+                      color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
+  geom_path(aes(x=Wash, y=doc_mg_l_mean, color= factor(Fraction, levels= treatment_order),
+                group=factor(Group, levels= line_path_order)),lwd=1.5) +
   theme_classic() +
-  labs(x = "Wash", y = "DOC mgC/L", color = "Size Fraction (um)")
+  labs(x = "Wash", y = "DOC mgC/L", color = "Size Fraction (um)", size = 16)+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
+  theme(axis.text = element_text(size = 16),
+        axis.title.x = element_text(size = 16),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 16))
+
 
 corrected_all %>%
   group_by(Fraction, Treatment, Wash, Group)%>%
@@ -172,7 +182,8 @@ corrected_all %>%
   geom_pointrange(aes(x=Wash, y=doc_mmolL_mean, ymin = doc_mmolL_mean- doc_mmolL_sd, ymax = doc_mmolL_mean + doc_mmolL_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
   geom_path(aes(x=Wash, y=doc_mmolL_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "DOC mM", color = "Size Fraction (um)")
+  labs(x = "Wash", y = "DOC mM", color = "Size Fraction (um)")+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
 #Fe plot
 corrected_all %>%
@@ -181,7 +192,8 @@ corrected_all %>%
   geom_pointrange(aes(x=Wash, y=Fe3_mg.g_mean, ymin = Fe3_mg.g_mean- Fe3_mg.g_sd, ymax = Fe3_mg.g_mean + Fe3_mg.g_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
   geom_path(aes(x=Wash, y=Fe3_mg.g_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "Fe 3+ mg/g", color = "Size Fraction (um)")
+  labs(x = "Wash", y = "Fe 3+ mg/g", color = "Size Fraction (um)")+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
 corrected_all %>%
   group_by(Fraction, Treatment, Wash, Group)%>%
@@ -189,7 +201,8 @@ corrected_all %>%
   geom_pointrange(aes(x=Wash, y=Fe_tot_mmolL_mean, ymin = Fe_tot_mmolL_mean- Fe_tot_mmolL_sd, ymax = Fe_tot_mmolL_mean + Fe_tot_mmolL_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
   geom_path(aes(x=Wash, y=Fe_tot_mmolL_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "Total Fe mM", color = "Size Fraction (um)")
+  labs(x = "Wash", y = "Total Fe mM", color = "Size Fraction (um)")+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
 #Fe:OC
 corrected_all %>%
@@ -198,9 +211,17 @@ corrected_all %>%
   geom_pointrange(aes(x=Wash, y=Fe.OC_mean, ymin = Fe.OC_mean- Fe.OC_sd, ymax = Fe.OC_mean + Fe.OC_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
   geom_path(aes(x=Wash, y=Fe.OC_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
   theme_classic() +
-  labs(x = "Wash", y = "Total Fe: OC (molar ratio)", color = "Size Fraction (um)")
+  labs(x = "Wash", y = "Total Fe: OC (molar ratio)", color = "Size Fraction (um)")+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
 
+corrected_all %>%
+  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>%
+  ggplot(aes(x = Wash, y= `Fe.OC_mean`)) +
+  geom_bar(stat= "identity", color = "Black", fill = "Skyblue", alpha = 0.7) +
+  facet_grid(. ~ Fraction) +
+  labs(x = "Wash", y = "Fe:OC", 
+       title = "Fe:OC Molar Ratio by Wash and Fraction")
 
 # #I was getting tired of figuring this out in r so I am doing some things in excel to make this go faster
 # write_csv(unique_rows, "../tempest-exp-feom-ConnorSULI/1-data/Summary/Fractions/Fraction_subtraction.csv")
