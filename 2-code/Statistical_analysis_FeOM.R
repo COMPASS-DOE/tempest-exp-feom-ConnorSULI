@@ -19,14 +19,14 @@ library(ggplot2)
 
 
 getwd()
-setwd("C:/Users/olou646/tempest-exp-feom-ConnorSULI")
+#setwd("C:/Users/olou646/tempest-exp-feom-ConnorSULI")
 
 
 #Load in data
-TOC_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/TMP_FeOM-TOC_All_data.csv")
-Fe_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Ferrozine_summary_Normalized.csv")
-Chemical_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Soil_chemical_data.csv")
-Salinity_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Salinity_summary.csv")%>%
+#TOC_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/TMP_FeOM-TOC_All_data.csv")
+#Fe_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Ferrozine_summary_Normalized.csv")
+#Chemical_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Soil_chemical_data.csv")
+#Salinity_data <- read.csv("C:/Users/olou646/tempest-exp-feom-ConnorSULI/1-data/Summary/Salinity_summary.csv")%>%
   mutate(sample_name = ID)%>%
   subset(select = -ID)
 
@@ -60,7 +60,8 @@ Cor_matrix <-  TOC_data %>%
   mutate_if(is.double, as.numeric) %>%
   summarise_if(is.numeric, list(mean= ~mean(., na.rm=TRUE), sd = ~sd(., na.rm=TRUE)))%>%
   left_join(EEMs_Fe_corrected)%>%
-  mutate(SUVA254 = (a254_corrected/doc_mg_l_mean)*100)
+  mutate(SUVA254 = (a254_corrected/doc_mg_l_mean)*100) %>% 
+  mutate(case_when()) #if there are NAs in the data, it might make s
 
 #Finalizing data normalization
 # correlation_matrix1 <- merge(Fe_data, TOC_data, by = "sample_name")%>%
@@ -153,8 +154,8 @@ corrected_all <- Cor_matrix %>%
   arrange(Treatment, Wash, Fraction) %>% # Ensure data is in correct order
   group_by(Treatment, Wash) %>% # Group by treatment and wash
   mutate_all(~replace(., is.nan(.), NA)) %>%
-  mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd),~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) # Subtract fraction from previous row for the variables it makes sense for only
-
+  mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd),~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) %>% # Subtract fraction from previous row for the variables it makes sense for only
+  mutate_all(~pmax(., 0)) #if the fractions are smaller than the error/variability then we get a neg number. turn these into 0s
 
 treatment_order <- c('0.1','0.45','1', "Blank")
 line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank") 
@@ -216,13 +217,21 @@ corrected_all %>%
 
 
 corrected_all %>%
+<<<<<<< Updated upstream
   mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= `Fe.OC_mean`)) +
   geom_bar(stat= "identity", color = "Black", fill = "Skyblue", alpha = 0.7) +
   facet_grid(. ~ Fraction) + # Making 3 separate graphs based upon Fraction size
+=======
+#  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>%
+  ggplot(aes(x = Wash, y= `Fe.OC_mean`,  fill = Treatment)) +
+  geom_bar(stat= "identity", color = "Black", alpha = 0.7, position = "dodge") +
+  facet_grid(. ~ Fraction) +
+>>>>>>> Stashed changes
   labs(x = "Wash", y = "Fe:OC", 
-       title = "Fe:OC Molar Ratio by Wash and Fraction")
+       title = "Fe:OC Molar Ratio by Wash and Fraction") +
+  theme_classic()
 
 # #I was getting tired of figuring this out in r so I am doing some things in excel to make this go faster
 # write_csv(unique_rows, "../tempest-exp-feom-ConnorSULI/1-data/Summary/Fractions/Fraction_subtraction.csv")
