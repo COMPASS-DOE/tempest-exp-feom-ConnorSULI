@@ -217,18 +217,10 @@ corrected_all %>%
 
 
 corrected_all %>%
-<<<<<<< Updated upstream
-  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>% # Making all data below 1 beomce 0.%>%
-  filter(Treatment == "OW")%>%
-  ggplot(aes(x = Wash, y= `Fe.OC_mean`)) +
-  geom_bar(stat= "identity", color = "Black", fill = "Skyblue", alpha = 0.7) +
-  facet_grid(. ~ Fraction) + # Making 3 separate graphs based upon Fraction size
-=======
 #  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>%
   ggplot(aes(x = Wash, y= `Fe.OC_mean`,  fill = Treatment)) +
   geom_bar(stat= "identity", color = "Black", alpha = 0.7, position = "dodge") +
   facet_grid(. ~ Fraction) +
->>>>>>> Stashed changes
   labs(x = "Wash", y = "Fe:OC", 
        title = "Fe:OC Molar Ratio by Wash and Fraction") +
   theme_classic()
