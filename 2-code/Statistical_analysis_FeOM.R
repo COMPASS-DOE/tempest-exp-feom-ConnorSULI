@@ -448,8 +448,8 @@ corrected_all %>%
   filter(Treatment == "OW")%>%
   group_by(Wash, Fraction)%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
-  ggplot(aes(x = `Fe2/Fe3`, y = Fe.OC_mean,color = Fraction, shape = Wash)) +
-  geom_point(size = 1.5) +
+  ggplot(aes(x = `Fe2/Fe3`, y = Fe.OC_mean)) +
+  geom_point(aes(shape = Fraction, color= as.factor(Wash)),size = 1.5) +
   geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
   stat_regline_equation(label.y = .5,label.x = 1.5, size = 12)+
   stat_cor(label.y = .25,label.x = 1.5, size = 12)+# Adjust label position as needed
