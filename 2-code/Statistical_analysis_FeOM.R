@@ -460,6 +460,21 @@ corrected_all %>%
         axis.title.y = element_text(size = 36))+ # Increase font size of y-axis label
   theme_classic()
 
+#Linear regression Fe(III) and suva
+corrected_all %>%
+  filter(Treatment == "OW")%>%
+  group_by(Wash, Fraction)%>%
+  ggplot(aes(y = Fe3_mmolL_mean, x = SUVA254)) +
+  geom_point(aes(shape = Fraction, color= as.factor(Wash)),size = 1.5) +
+  geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
+#  stat_regline_equation(label.y = .5,label.x = 1.5, size = 12)+
+ # stat_cor(label.y = .25,label.x = 1.5, size = 12)+# Adjust label position as needed
+  labs(y = "Fe3", x = "SUVA254",
+       title = "Linear Regression of iron(III) and SUVA")+
+  theme(axis.text = element_text(size = 36), # Increase font size of axis text
+        axis.title.x = element_text(size = 36),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 36))+ # Increase font size of y-axis label
+  theme_classic()
 
 #Linear Reg for Fe2:Fe3 and SUVA
 corrected_all %>%
