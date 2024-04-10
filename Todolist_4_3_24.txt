@@ -2,18 +2,18 @@
 
 2.Calculate molar ratio OC:Fe√
 
-3.Look at OC:Fe mobilization through time and treatment (use ratio)
+3.Look at OC:Fe mobilization through time and treatment (use ratio)√
 
-4.What size fractions have the largest OC:Fe
+4.What size fractions have the largest OC:Fe√
 
-5.Apply Fe(III) equation to 254 data
+5.Apply Fe(III) equation to 254 data√
 	calculate abs due to Fe3 at 254 using eqn then subtract that from the EEMs 254.
 
-6.OC:Fe @ 254  (OC:Fe, a254) (x,y)
+6.OC:Fe @ 254  (OC:Fe, a254) (x,y)√
 
 7.gsw package for salinity
 
 8.Update TOC Readme notes with Rainier's lab notebook
 
-9.Make sure columns are correctly read as numeric, character, etc in Stats code
+9.Make sure columns are correctly read as numeric, character, etc in Stats code√
 	I did this by changing it from an excel document to a csv
