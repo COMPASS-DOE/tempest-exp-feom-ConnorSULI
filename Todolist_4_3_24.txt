@@ -17,3 +17,11 @@
 
 9.Make sure columns are correctly read as numeric, character, etc in Stats code√
 	I did this by changing it from an excel document to a csv
+
+10. Make new graph that is DOC mg/ soil g
+	Use Soil carbon data from Anya's data (Soil depth)
+
+11. PLot line of starting material on graphs
+	Carbon
+	Fe
+NH5230

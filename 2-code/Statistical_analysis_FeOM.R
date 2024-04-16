@@ -31,7 +31,8 @@ setwd("C:/Users/olou646/tempest-exp-feom-ConnorSULI")
   subset(select = -ID)
 
 #loading files not computer specific
-TOC_data <- read.csv("./1-data/Summary/TMP_FeOM-TOC_All_data.csv")
+TOC_data <- read.csv("./1-data/Summary/TMP_FeOM-TOC_All_data.csv")%>%
+  mutate(doc_mg.g = (doc_mg_l*.035)/5
 Fe_data <- read.csv("./1-data/Summary/Ferrozine_summary_Normalized.csv") %>%
   select(sample_name:Fe3_mg.g)
 Chemical_data <- read.csv("./1-data/Summary/Soil_chemical_data.csv")
@@ -42,6 +43,13 @@ Salinity_data <- read.csv("./1-data/Summary/Salinity_summary.csv")%>%
 EEMs_Fe_corrected<- read.csv("./1-data/Summary/EEMs_Fe_corrected.csv")
                                                     
 #maybe a simpler way to merge and calculate stuff....
+
+OG_Soil_C_perc<- mean(Chemical_data$C_.)
+OG_Soil_C_mg.g<-(((OG_Soil_C_perc/100)*5)/5)*1000
+
+OG_Soil_C_g<- (OG_Soil_C_perc/100)*5
+OG_Soil_C_mmol.L<- (((OG_Soil_C_g/12.011)*1000)/.035)
+OG_Soil_Fe.OC
 
 fe_MW= 55.845
 C_MW = 12.01
@@ -55,13 +63,18 @@ Cor_matrix <-  TOC_data %>%
          Fe3_mmolL = Fe3_ppm / fe_MW,
          doc_mmolL = doc_mg_l / C_MW,
          Fe_tot_mmolL = Fe2_mmolL + Fe3_mmolL,
-         Fe.OC = Fe_tot_mmolL/doc_mmolL) %>%
-  select(sample_name, Treatment, Wash, Fraction, Group, doc_mg_l, Fe2_ppm:Cond, `Salinity..g.L.`:Fe.OC)%>%
+         Fe.OC = Fe_tot_mmolL/doc_mmolL,
+         Fe2.Fe3 = Fe2_mmolL/Fe3_mmolL) %>%
+  select(sample_name,Fe2.Fe3, Treatment, Wash, Fraction, Group, doc_mg_l, Fe2_ppm:Cond, `Salinity..g.L.`:Fe.OC, doc_mg.g)%>%
   mutate_if(is.double, as.numeric) %>%
   summarise_if(is.numeric, list(mean= ~mean(., na.rm=TRUE), sd = ~sd(., na.rm=TRUE)))%>%
   left_join(EEMs_Fe_corrected)%>%
   mutate(SUVA254 = (a254_corrected/doc_mg_l_mean)*100)
-  mutate(case_when()) #if there are NAs in the data, it might make s
+  #mutate(case_when()) #if there are NAs in the data, it might make s
+OG_Soil_Fe.mmol.L<-mean(Chemical_data$Fe_ppm)/fe_MW
+OG_Soil_Fe.OC<-OG_Soil_Fe.ppm/OG_Soil_C_mmol.L
+
+
 
 #Finalizing data normalization
 # correlation_matrix1 <- merge(Fe_data, TOC_data, by = "sample_name")%>%
@@ -157,55 +170,120 @@ corrected_all <- Cor_matrix %>%
   mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd),~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) %>% # Subtract fraction from previous row for the variables it makes sense for only
   mutate_all(~pmax(., 0)) #if the fractions are smaller than the error/variability then we get a neg number. turn these into 0s
 
-treatment_order <- c('0.1','0.45','1', "Blank")
+treatment_order <- c('<0.1','0.1-0.45','0.45-1.0', "Blank")
 line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank") 
 
 
-#DOC plot
+#DOC plot with AW and OW
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
-  geom_pointrange(aes(x=Wash, y=doc_mg_l_mean, ymin = doc_mg_l_mean- doc_mg_l_sd, ymax = doc_mg_l_mean + doc_mg_l_sd,
+  geom_pointrange(aes(x=Wash, y=doc_mg.g_mean, ymin = doc_mg.g_mean- doc_mg.g_sd, ymax = doc_mg.g_mean + doc_mg.g_sd,
                       color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
-  geom_path(aes(x=Wash, y=doc_mg_l_mean, color= factor(Fraction, levels= treatment_order),
-                group=factor(Group, levels= line_path_order)),lwd=1.5) +
+  geom_path(aes(x=Wash, y=doc_mg.g_mean, color= factor(Fraction, levels= treatment_order),
+                group=factor(Group, levels= line_path_order)),lwd=1.5)+
   theme_classic() +
-  labs(x = "Wash", y = "DOC mgC/L",title = "DOC release over time", color = "Size Fraction (um)", size = 28)+
+  labs(x = "Wash", y = "DOC mgC per g soil",title = "DOC release over time", color = "Size Fraction (um)", size = 28)+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
-        title = element_text(size = 26)) # Increase font size of y-axis label
+        title = element_text(size = 32),
+        legend.text = element_text(size = 26))# Increase font size of y-axis label
+  #geom_hline(yintercept = OG_Soil_C_mg.g, linetype = "dashed", color = "black")+
+  #annotate("text", x = 4, y = 4.2, label = "starting mgC per g of soil", hjust = 1, vjust = -1, size = 12) 
+
+
 
 #DOC plot with just OW treatment
   corrected_all %>%
-  group_by(Fraction, Treatment, Wash, Group)%>%
+    mutate(Fraction = case_when(
+      Fraction == "1" ~ "0.45-1.0",
+      Fraction == "0.45" ~ "0.1-0.45",
+      Fraction == "0.1" ~ "<0.1"
+    ))%>%
+  group_by(Fraction, Treatment, Wash)%>%
   filter(Treatment == "OW")%>%
   ggplot()+
-  geom_pointrange(aes(x=Wash, y=doc_mg_l_mean, ymin = doc_mg_l_mean- doc_mg_l_sd, ymax = doc_mg_l_mean + doc_mg_l_sd,
+  geom_pointrange(aes(x=Wash, y=doc_mg.g_mean, ymin = doc_mg.g_mean- doc_mg.g_sd, ymax = doc_mg.g_mean + doc_mg.g_sd,
                       color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
-  geom_path(aes(x=Wash, y=doc_mg_l_mean, color= factor(Fraction, levels= treatment_order),
+  geom_path(aes(x=Wash, y=doc_mg.g_mean, color= factor(Fraction, levels= treatment_order),
                 group=factor(Group, levels= line_path_order)),lwd=1.5) +
   theme_classic() +
-  labs(x = "Wash", y = "DOC mgC/L",title = "DOC release over time", color = "Size Fraction (um)", size = 28)+
+  labs(x = "Wash", y = "DOC mgC per g soil",title = "DOC release over time", color = "Size Fraction (um)", size = 28)+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
-        title = element_text(size = 26)) # Increase font size of y-axis label
+        title = element_text(size = 32),
+        legend.text = element_text(size = 26))
+    #geom_hline(yintercept = OG_Soil_C_mg.g, linetype = "dashed", color = "black")+
+    #annotate("text", x = 4, y = 4.2, label = "starting mgC per g of soil", hjust = 1, vjust = -1, size = 12) 
+    
+    
 
-
+  
+  
+#SUVA plot
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
-  ggplot()+
-  geom_pointrange(aes(x=Wash, y=doc_mmolL_mean, ymin = doc_mmolL_mean- doc_mmolL_sd, ymax = doc_mmolL_mean + doc_mmolL_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
-  geom_path(aes(x=Wash, y=doc_mmolL_mean, color= factor(Fraction, levels= treatment_order), group=factor(Group, levels= line_path_order) )) +
+  filter(Treatment == "OW")%>%
+  ggplot(aes(x=Wash, y=SUVA254, color= factor(Fraction, levels= treatment_order),
+             shape =Treatment))+
+  geom_point(size = 3)+
+  geom_path(aes(group= factor(Fraction, levels= treatment_order)), lwd = 1.5)+
   theme_classic() +
-  labs(x = "Wash", y = "DOC mM", color = "Size Fraction (um)")+
-  scale_shape_manual(values = c("AW" = 1, "OW" = 19))
+  labs(x = "Wash", y = "SUVA 254 nm", color = "Size Fraction (um)", title = "SUVA throughout experiement")+
+  theme(axis.text = element_text(size = 26), # Increase font size of axis text
+        axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 26),
+        title = element_text(size = 32),
+        legend.text = element_text(size = 26)) # Increase font size of y-axis label
+
+#Fe2:Fe3 plot
+corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
+  group_by(Fraction, Treatment, Wash)%>%
+  filter(Treatment == "OW")%>%
+  ggplot()+
+  geom_pointrange(aes(x=Wash, y=Fe2.Fe3_mean, ymin = Fe2.Fe3_mean- Fe2.Fe3_sd, ymax = Fe2.Fe3_mean + Fe2.Fe3_sd,
+                      color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
+  geom_path(aes(x=Wash, y=Fe2.Fe3_mean, color= factor(Fraction, levels= treatment_order),
+                group=factor(Group, levels= line_path_order)),lwd=1.5) +
+  theme_classic() +
+  labs(x = "Wash", y = "Fe(II): Fe(III)",title = "molar ratio of Fe(II) to Fe(III) over time", color = "Size Fraction (um)", size = 28)+
+  scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
+  theme(axis.text = element_text(size = 26), # Increase font size of axis text
+        axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 26),
+        title = element_text(size = 32),
+        legend.text = element_text(size = 26))
+
+
+
+
 
 #Fe plot
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
   geom_pointrange(aes(x=Wash, y=Fe3_mg.g_mean, ymin = Fe3_mg.g_mean- Fe3_mg.g_sd, ymax = Fe3_mg.g_mean + Fe3_mg.g_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
@@ -214,7 +292,17 @@ corrected_all %>%
   labs(x = "Wash", y = "Fe 3+ mg/g", color = "Size Fraction (um)")+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
+
+
+
+#SUVA plot
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
+  filter(Treatment == "OW")%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
   geom_pointrange(aes(x=Wash, y=Fe_tot_mmolL_mean, ymin = Fe_tot_mmolL_mean- Fe_tot_mmolL_sd, ymax = Fe_tot_mmolL_mean + Fe_tot_mmolL_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
@@ -226,6 +314,11 @@ corrected_all %>%
 
 #Fe:OC
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
   geom_pointrange(aes(x=Wash, y=Fe.OC_mean, ymin = Fe.OC_mean- Fe.OC_sd, ymax = Fe.OC_mean + Fe.OC_sd, color= factor(Fraction, levels= treatment_order), shape =Treatment)) +
@@ -234,7 +327,14 @@ corrected_all %>%
   labs(x = "Wash", y = "Total Fe: OC (molar ratio)", color = "Size Fraction (um)")+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))
 
+
+#Fe2:Fe3 plot
 corrected_all%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   group_by(Fraction, Treatment, Wash, Group)%>%
   ggplot()+
@@ -246,9 +346,14 @@ corrected_all%>%
 
 
 
-#Box Plot with Fe:OC broken up by wash and Fraction
+#Bar graph with Fe:OC broken up by wash and Fraction
 corrected_all %>%
   filter(Treatment == "OW")%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
 #  mutate(`Fe.OC_mean` = ifelse(`Fe.OC_mean` < 0, 0, `Fe.OC_mean`))%>%
   ggplot(aes(x = Wash, y= `Fe.OC_mean`)) +
   geom_bar(stat= "identity", color = "Black", fill = "Red", alpha = 0.7, position = "dodge") +
@@ -259,10 +364,18 @@ corrected_all %>%
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
                        axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
                        axis.title.y = element_text(size = 26),
-        title = element_text(size = 26)) # Increase font size of y-axis label
+        title = element_text(size = 26),
+        strip.text = element_text(size = 18))+
+  geom_hline(yintercept = OG_Soil_Fe.OC, linetype = "dashed", color = "black")+
+  annotate("text", x = .1, y = .15, label = "starting Fe:OC", hjust = 1, vjust = -1, size = 12) 
 
-#Boxplot of Fe mmol/L 
+#Bargraph of Fe mmol/L 
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(Fe_tot_mmolL_mean = ifelse(Fe_tot_mmolL_mean < 0, 0, Fe_tot_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= Fe_tot_mmolL_mean)) +
@@ -274,11 +387,17 @@ corrected_all %>%
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
-        title = element_text(size = 26)) # Increase font size of y-axis label
+        title = element_text(size = 26),
+        strip.text = element_text(size = 18)) # Increase font size of y-axis label
 
 
 #Bar plot of Fe2 grouped by fraction and wash
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(Fe2_mmolL_mean = ifelse(Fe2_mmolL_mean < 0, 0, Fe2_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= Fe2_mmolL_mean)) +
@@ -289,10 +408,16 @@ corrected_all %>%
   theme_classic()+
 theme(axis.text = element_text(size = 26), # Increase font size of axis text
  axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
-axis.title.y = element_text(size = 26)) # Increase font size of y-axis label
+axis.title.y = element_text(size = 26),
+strip.text = element_text(size = 18)) # Increase font size of y-axis label
 
 #Bar Graph pf Fe3 grouped by Fraction and wash
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(Fe3_mmolL_mean = ifelse(Fe3_mmolL_mean < 0, 0, Fe3_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= Fe3_mmolL_mean)) +
@@ -303,11 +428,17 @@ corrected_all %>%
   theme_classic()+
 theme(axis.text = element_text(size = 26), # Increase font size of axis text
  axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
-axis.title.y = element_text(size = 26)) # Increase font size of y-axis label
+axis.title.y = element_text(size = 26),
+strip.text = element_text(size = 18)) # Increase font size of y-axis label
 
 
 #bar graph of DOC grouped by Fraction and wash
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(doc_mmolL_mean = ifelse(doc_mmolL_mean < 0, 0, doc_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= doc_mmolL_mean)) +
@@ -318,27 +449,39 @@ corrected_all %>%
   theme_classic()+
   theme(axis.text = element_text(size = 20), # Increase font size of axis text
         axis.title.x = element_text(size = 20),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 20)) # Increase font size of y-axis label
+        axis.title.y = element_text(size = 20),
+        strip.text = element_text(size = 18)) # Increase font size of y-axis label
 
 
 #bar graph of Fe2/2Fe3 grouped by Fraction and wash
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   #mutate(doc_mmolL_mean = ifelse(doc_mmolL_mean < 0, 0, doc_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
   ggplot(aes(x = Wash, y= `Fe2/Fe3`, ymax = 5)) +
   geom_bar(stat= "identity", color = "Black", fill = "Forest Green", alpha = 0.7) +
   facet_grid(. ~ Fraction) + # Making 3 separate graphs based upon Fraction size
-  labs(x = "Wash", y = "Fe2:Fe3", 
-       title = "Fe2:Fe3 by Wash and Fraction")+
+  labs(x = "Wash", y = "Fe(II):Fe(III)", 
+       title = "Fe(II):Fe(III) by Wash and Fraction")+
   theme_classic()+
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
-          title = element_text(size = 26))# Increase font size of y-axis label
+          title = element_text(size = 26),
+        strip.text = element_text(size = 18))# Increase font size of y-axis label
 
-
+#Bar Graph of SUVA 
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   #mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   #mutate(doc_mmolL_mean = ifelse(doc_mmolL_mean < 0, 0, doc_mmolL_mean))%>% # Making all data below 1 beomce 0.%>%
   filter(Treatment == "OW")%>%
@@ -350,11 +493,43 @@ corrected_all %>%
   theme_classic()+
   theme(axis.text = element_text(size = 20), # Increase font size of axis text
         axis.title.x = element_text(size = 20),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 20)) # Increase font size of y-axis label
+        axis.title.y = element_text(size = 20),
+        strip.text = element_text(size = 18)) # Increase font size of y-axis label
+
+
+#Boxplot of Fe:OC with AW and OW treatmens and Fe:OC line
+corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
+  group_by(Fraction, Treatment, Wash)%>%
+# filter(Treatment == "OW")%>%
+  ggplot(aes(x = Wash, y=Fe.OC_mean, fill = Treatment )) +
+  geom_boxplot(color = "Black", alpha = 0.7) +
+  facet_grid(. ~ Fraction, scales = "free_x") +
+  labs(x = "Wash", y = "Fe:OC", 
+       title = "Fe:OC by Wash and Fraction")+
+  theme_classic()+
+  theme(axis.text = element_text(size = 20), # Increase font size of axis text
+        axis.title.x = element_text(size = 20),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 20),
+        strip.text = element_text(size = 18),
+        title = element_text(size = 32),
+        legend.text = element_text(size = 26))+
+  geom_hline(yintercept = OG_Soil_Fe.OC, linetype = "dashed", color = "black", lwd = 1.5)
+  
+
 
 
 #Linear correlation with Fe corrected a254 and Fe
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   ggplot(aes(x = Fe_tot_mmolL_mean, y = a254_corrected)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -365,11 +540,17 @@ corrected_all %>%
   theme_classic()+
   theme(axis.text = element_text(size = 16), # Increase font size of axis text
         axis.title.x = element_text(size = 16),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 16))
+        axis.title.y = element_text(size = 16),
+        title = element_text(size = 32))
 
 
 #Linear Regression with DOC mmol/L and  Total Fe
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   ggplot(aes(x = Fe_tot_mmolL_mean, y = doc_mmolL_mean)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -386,6 +567,11 @@ corrected_all %>%
 
 #Linear Regression with SUVA and Total Fe
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   ggplot(aes(x = Fe_tot_mmolL_mean, y = SUVA254)) +
   geom_point(size = 2) +
   geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
@@ -402,6 +588,11 @@ corrected_all %>%
 
 #Linear Reg for Fe2/Fe3 and O2%
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   ggplot(aes(y =`Fe2/Fe3` , x = O2_._mean)) +
   geom_point(size = 1.5) +
@@ -417,6 +608,11 @@ corrected_all %>%
 
 #Linear Reg for Fe2 and Fe3
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   ggplot(aes(x = Fe3_mmolL_mean, y = Fe2_mmolL_mean)) +
   geom_point(size = 1.5) +
   geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
@@ -431,6 +627,11 @@ corrected_all %>%
 
 #Linear Reg for Fe3 and SUVA
 corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   ggplot(aes(x = Fe3_mmolL_mean, y = SUVA254)) +
   geom_point(size = 1.5) +
   geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
@@ -440,12 +641,18 @@ corrected_all %>%
        title = "Linear Regression of Fe3 and SUVA254")+
   theme(axis.text = element_text(size = 36), # Increase font size of axis text
         axis.title.x = element_text(size = 36),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 36))+ # Increase font size of y-axis label
+        axis.title.y = element_text(size = 36),
+        legend.text = element_text(size = 26))+ # Increase font size of y-axis label
   theme_classic()
 
 #Linear Reg for Fe2:Fe3 and Fe:OC
 corrected_all %>%
   filter(Treatment == "OW")%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   group_by(Wash, Fraction)%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   ggplot(aes(x = `Fe2/Fe3`, y = Fe.OC_mean)) +
@@ -460,25 +667,15 @@ corrected_all %>%
         axis.title.y = element_text(size = 36))+ # Increase font size of y-axis label
   theme_classic()
 
-#Linear regression Fe(III) and suva
-corrected_all %>%
-  filter(Treatment == "OW")%>%
-  group_by(Wash, Fraction)%>%
-  ggplot(aes(y = Fe3_mmolL_mean, x = SUVA254)) +
-  geom_point(aes(shape = Fraction, color= as.factor(Wash)),size = 1.5) +
-  geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
-#  stat_regline_equation(label.y = .5,label.x = 1.5, size = 12)+
- # stat_cor(label.y = .25,label.x = 1.5, size = 12)+# Adjust label position as needed
-  labs(y = "Fe3", x = "SUVA254",
-       title = "Linear Regression of iron(III) and SUVA")+
-  theme(axis.text = element_text(size = 36), # Increase font size of axis text
-        axis.title.x = element_text(size = 36),  # Increase font size of x-axis label
-        axis.title.y = element_text(size = 36))+ # Increase font size of y-axis label
-  theme_classic()
 
 #Linear Reg for Fe2:Fe3 and SUVA
 corrected_all %>%
   filter(Treatment == "OW")%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   ggplot(aes(x = `Fe2/Fe3`, y = SUVA254)) +
   geom_point(size = 1.5) +
@@ -497,6 +694,11 @@ corrected_all %>%
 #Plot of Fe2/Fe3 and wash
 corrected_all%>%
   group_by(Fraction, Wash, Treatment, Group)%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   ggplot(aes(x= Wash, y= `Fe2/Fe3`))+
   geom_point(aes(x= Wash, y= `Fe2/Fe3`,ymin = 0- doc_mg_l_sd, ymax = 5, color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
@@ -507,12 +709,48 @@ corrected_all%>%
 #Plot of SUVA and wash
 corrected_all%>%
   group_by(Fraction, Wash, Treatment, Group)%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
   #mutate(`Fe2/Fe3` = Fe2_mmolL_mean/Fe3_mmolL_mean)%>%
   ggplot(aes(x= Wash, y= SUVA254))+
   geom_point(aes(x= Wash, y= SUVA254,ymin = 0, ymax = 200, color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
   geom_path(aes(x=Wash, y=doc_mg_l_mean, color= factor(Fraction, levels= treatment_order),
                 group=factor(Group, levels= line_path_order)),lwd=1.5) +
   theme_classic()
+
+#Linear regression Fe(III) and suva
+corrected_all %>%
+  filter(Treatment == "OW")%>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  ))%>%
+  group_by(Wash, Fraction)%>%
+  mutate(Wash = factor(Wash))%>%
+  ggplot(aes(y = Fe3_mmolL_mean, x = SUVA254)) +
+  geom_point(aes(shape = Fraction, color= Wash),size = 3) +
+  geom_smooth(method = "lm", se = TRUE, lwd = 1.5) +
+  stat_regline_equation(label.y = .35, size = 11)+
+  stat_cor(label.y = .3, size = 11)+# Adjust label position as needed
+  labs(y = "Fe3", x = "SUVA254",
+       title = "Linear Regression of iron(III) and SUVA")+
+  theme_classic()+
+  theme(axis.text = element_text(size = 26), # Increase font size of axis text
+        axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
+        axis.title.y = element_text(size = 26),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 26))+
+scale_color_manual(values = c("1" = "blue", "2" = "red", "3" = "green", "4" = "black", "5" = "purple"))# Increase font size of y-axis label
+
+
+
+
+
+
 
 
 #Correlation matrix
