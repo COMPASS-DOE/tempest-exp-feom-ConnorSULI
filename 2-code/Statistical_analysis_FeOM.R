@@ -241,6 +241,7 @@ corrected_all %>%
                         color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
     geom_path(aes(x=Wash, y=Salinity..g.L._mean, color= factor(Fraction, levels= treatment_order),
                   group=factor(Group, levels= line_path_order)),lwd=1.5) +
+    scale_color_manual(values = c("0.45-1.0" = "dark blue", "0.1-0.45" = "blue", "<0.1" = "light blue")) +
     theme_classic() +
     labs(x = "Wash", y = "Salinity g/L",title = "Salinity of fractions over time", color = "Size Fraction (um)", size = 28)+
     scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
