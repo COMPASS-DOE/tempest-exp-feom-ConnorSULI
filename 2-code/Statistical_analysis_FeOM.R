@@ -170,6 +170,29 @@ corrected_all <- Cor_matrix %>%
   mutate_at(vars(doc_mg_l_mean:Fe3_mg.g_mean, Fe_tot_mg.g_mean:Fe.OC_mean, doc_mg_l_sd:Fe3_mg.g_sd,Fe_tot_mg.g_sd:Fe.OC_sd),~ if_else(row_number() == 1, ., . - lag(., default=first(.), order_by = Fraction))) %>% # Subtract fraction from previous row for the variables it makes sense for only
   mutate_all(~pmax(., 0)) #if the fractions are smaller than the error/variability then we get a neg number. turn these into 0s
 
+sum0.1<-corrected_all %>%
+  filter(Fraction == "0.1") %>%
+  summarise(total_doc_mg_g_mean = sum(doc_mg.g_mean))
+  Total_0.1_C<-sum(sum0.1$total_doc_mg_g_mean)
+
+  sum0.45<-corrected_all %>%
+    filter(Fraction == "0.45") %>%
+    summarise(total_doc_mg_g_mean = sum(doc_mg.g_mean))
+  Total_0.45_C<-sum(sum0.45$total_doc_mg_g_mean)
+  
+  sum1.0<-corrected_all %>%
+    filter(Fraction == "1") %>%
+    summarise(total_doc_mg_g_mean = sum(doc_mg.g_mean))
+  Total_1_C<-sum(sum1.0$total_doc_mg_g_mean)
+  
+  Total_c<-sum(Total_0.1_C,Total_0.45_C,Total_1_C)
+  
+  per_0.1<-(Total_0.1_C/Total_c)*100
+  per_0.45<-(Total_0.45_C/Total_c)*100
+  per_1<-(Total_1_C/Total_c)*100
+
+  per_0.45 - per_0.1
+  
 treatment_order <- c('<0.1','0.1-0.45','0.45-1.0', "Blank")
 line_path_order <- c("AW 0.1", "AW 0.45", "AW 1", "OW 0.1", "OW 0.45", "OW 1", "AW Blank", "OW Blank") 
 
@@ -308,21 +331,21 @@ corrected_all %>%
     Fraction == "0.45" ~ "0.1-0.45",
     Fraction == "0.1" ~ "<0.1"
   ))%>%
-  group_by(Fraction, Treatment, Wash, Group)%>%
+  group_by(Fraction, Treatment, Wash)%>%
+ # filter(Treatment == "OW")%>%
   ggplot()+
-  geom_pointrange(aes(x=Wash, y=Fe3_mg.g_mean, ymin = Fe3_mg.g_mean- Fe3_mg.g_sd,
-                      ymax = Fe3_mg.g_mean + Fe3_mg.g_sd, color= factor(Fraction, levels= treatment_order),
-                      shape =Treatment),size = 2) +
-  geom_path(aes(x=Wash, y=Fe3_mg.g_mean, color= factor(Fraction, levels= treatment_order),
-                group=factor(Group, levels= line_path_order)), lwd = 1.5) +
-  labs(x = "Wash", y = "Fe(III) mg/g soil", color = "Size Fraction (um)",
-       title = "Fe(III) mobilization over time")+
+  geom_pointrange(aes(x=Wash, y=Fe_tot_mmolL_mean, ymin = Fe_tot_mmolL_mean- Fe_tot_mmolL_sd, ymax = Fe_tot_mmolL_mean + Fe_tot_mmolL_sd,
+                      color= factor(Fraction, levels= treatment_order), shape =Treatment), size = 1.5) +
+  geom_path(aes(x=Wash, y=Fe_tot_mmolL_mean, color= factor(Fraction, levels= treatment_order),
+                group=factor(Group, levels= line_path_order)),lwd=1.5) +
+  scale_color_manual(values = c("0.45-1.0" = "dark blue", "0.1-0.45" = "blue", "<0.1" = "light blue")) +
+  theme_classic() +
+  labs(x = "Wash", y = "Fe mmol/L",title = "Fe release per wash", color = "Size Fraction (um)", size = 28)+
   scale_shape_manual(values = c("AW" = 1, "OW" = 19))+
-  theme_classic()+
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
-        title = element_text(size = 26),
+        title = element_text(size = 32),
         legend.text = element_text(size = 26))
 
 
@@ -416,12 +439,36 @@ corrected_all %>%
   facet_grid(. ~ Fraction) + # Making 3 separate graphs based upon Fraction size
   labs(x = "Wash", y = "Fe mmol/L", 
        title = "Fe mmol/L by Wash and Fraction")+
+  scale_fill_manual(values = c("0.45-1.0" = "dark blue", "0.1-0.45" = "blue", "<0.1" = "light blue")) +
   theme_classic()+
   theme(axis.text = element_text(size = 26), # Increase font size of axis text
         axis.title.x = element_text(size = 26),  # Increase font size of x-axis label
         axis.title.y = element_text(size = 26),
         title = element_text(size = 26),
         strip.text = element_text(size = 18)) # Increase font size of y-axis label
+
+corrected_all %>%
+  mutate(Fraction = case_when(
+    Fraction == "1" ~ "0.45-1.0",
+    Fraction == "0.45" ~ "0.1-0.45",
+    Fraction == "0.1" ~ "<0.1"
+  )) %>%
+  mutate(Fe3_mmolL_mean = ifelse(Fe3_mmolL_mean < 0, 0, Fe3_mmolL_mean)) %>% 
+  filter(Treatment == "OW") %>%
+  ggplot(aes(x = Wash, y = Fe3_mmolL_mean, fill = Fraction)) +
+  geom_col(color = "Black", alpha = 0.7) +
+  facet_grid(. ~ Fraction) +
+  labs(x = "Wash", y = "Fe(III) mmol/L", title = "Fe(III) mmol/L by Wash and Fraction") +
+  scale_fill_manual(values = c("0.45-1.0" = "darkblue", "0.1-0.45" = "blue", "<0.1" = "lightblue")) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 26), 
+        axis.title.x = element_text(size = 26),  
+        axis.title.y = element_text(size = 26),
+        title = element_text(size = 26),
+        strip.text = element_text(size = 18),
+        legend.text = element_text(size = 26)) 
+
+
 
 
 #Bar plot of Fe2 grouped by fraction and wash
